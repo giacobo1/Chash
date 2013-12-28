@@ -9,6 +9,8 @@
 using namespace std;
 
 
+
+
 template<class Type>class Chash
 {
 
