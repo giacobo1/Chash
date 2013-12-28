@@ -13,9 +13,6 @@ $(EXECUTABLE): $(OBJECTS)
 .cpp.o:
 	$(CC) $(CFLAGS) $< -o $@
 
-run:
-	./teste
-
 
 clear:
 	rm *o teste
