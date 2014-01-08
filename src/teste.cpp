@@ -1,23 +1,28 @@
 #include "libhash.h"
+#include <time.h>
 
+#define NUMTHREADS 2048
 
-//receber o número de threads, tamanho da tabela, 
-//número de blocos e o total de operações
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
+	pthread_t w[NUMTHREADS];
 
+	Chash<int> hash((unsigned int)(8),(unsigned int)(1));
+
+	srand(time(NULL));
 	
-	if(argc > 1)
+	for(int i = 0; i < NUMTHREADS; i++)
 	{
-		Chash<int> h(atoi(argv[2]),atoi(argv[3]));
+		//Argument<int> *x = new Argument<int>((unsigned int)(rand()),rand(),&hash);
 
-		h._printall();
-
-
+		pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>((unsigned int)(rand()), rand(), &hash));
 	}
-	else
-		printf("Erro na passagem de argumentos.\n");
 
+	for (int i = 0; i < NUMTHREADS; i++) pthread_join(w[i],NULL);
+	
+	hash._printall();
 
-	return EXIT_SUCCESS;
+	system("pause");
+
+	return 0;
 }
