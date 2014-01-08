@@ -44,7 +44,7 @@ template<class Type>class Chash
 
 	int rehashFunc(unsigned int key, int probing, int *rhst);
 	void realloc_add(unsigned int key, Type d);
-	Entry<Type> *search(unsigned int key);
+	Entry<Type> *search(unsigned int key, bool getSemaphores = true);
 
 public:
 
@@ -197,7 +197,7 @@ void Chash<Type>::realloc_add(unsigned int key, Type d)
 }
 
 template<class Type>
-Entry<Type> *Chash<Type>::search(unsigned int key)
+Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores = true)
 {
 	Entry<Type> *_return = NULL;
 
@@ -209,6 +209,14 @@ Entry<Type> *Chash<Type>::search(unsigned int key)
 	int oldSize;
 	int value;
 
+	sem_wait(&allocateMut);
+	sem_getvalue(&allocateMut, &value);
+
+	for (int i = value; i < 1; i++)
+	{
+		sem_post(&allocateMut);
+	}
+
 	oldSize = size;
 	index = key % size;
 
@@ -219,16 +227,11 @@ Entry<Type> *Chash<Type>::search(unsigned int key)
 
 	rehashIteraction_t = -1;
 
-	sem_wait(&allocateMut);
-	sem_getvalue(&allocateMut, &value);
-
-	for (int i = value; i < 1; i++)
+	if (getSemaphores)
 	{
-		sem_post(&allocateMut);
+		sem_wait(blockSems.getSemaphore(blockIndex));
+		sem_wait(activitySems.getSemaphore(blockIndex));
 	}
-
-	sem_wait(blockSems.getSemaphore(blockIndex));
-	sem_wait(activitySems.getSemaphore(blockIndex));
 
 	while (true)
 	{
@@ -273,8 +276,11 @@ Entry<Type> *Chash<Type>::search(unsigned int key)
 		}
 	}
 
-	sem_post(activitySems.getSemaphore(blockIndex));
-	sem_post(blockSems.getSemaphore(blockIndex));
+	if (getSemaphores)
+	{
+		sem_post(activitySems.getSemaphore(blockIndex));
+		sem_post(blockSems.getSemaphore(blockIndex));
+	}
 
 	return _return;
 }
@@ -296,6 +302,14 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 	int oldBlockIndex;
 	int oldIndex;
 
+	sem_wait(&allocateMut);
+	sem_getvalue(&allocateMut, &value);
+
+	for (int i = value; i < 1; i++)
+	{
+		sem_post(&allocateMut);
+	}
+
 	oldSize = size;
 	index = k % size;
 
@@ -305,14 +319,6 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 	oldBlockIndex = blockIndex;
 
 	rehashIteraction_t = -1;
-
-	sem_wait(&allocateMut);
-	sem_getvalue(&allocateMut, &value);
-
-	for (int i = value; i < 1; i++)
-	{
-		sem_post(&allocateMut);
-	}
 
 	#ifdef DEBUG
 	elem = blockSems.getSemaphore(blockIndex);
@@ -557,8 +563,8 @@ void Chash<Type>:: _printall(void)
 	}
 
 	printf("\n\n================ [ Tabela ] ================\n\n");
-	for(unsigned int i = 0; i < this->size; i++)
-		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;
+	/*for(unsigned int i = 0; i < this->size; i++)
+		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;*/
 
 	
 	printf(
