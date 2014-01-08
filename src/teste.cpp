@@ -5,23 +5,31 @@
 
 int main(int argc, char *argv[])
 {
-	pthread_t w[NUMTHREADS];
-	pthread_t printWorker;
-
 	Chash<int> hash((unsigned int)(8),(unsigned int)(1));
 
 	srand(time(NULL));
 	
-	for(int i = 0; i < NUMTHREADS / 2; i++)
+	pthread_t w[NUMTHREADS];
+
+	unsigned int *keys = new unsigned int[NUMTHREADS];
+	unsigned int *data = new unsigned int[NUMTHREADS];
+
+	for (int i = 0; i < NUMTHREADS; i++)
 	{
-		pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>((unsigned int)(rand()), rand(), &hash));
+		keys[i] = (unsigned int)(rand() % 10000);
+		data[i] = (unsigned int)(rand() % 10000);
+	}
+	
+	for (int i = 0; i < NUMTHREADS / 2; i++)
+	{
+		pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>(keys[i], data[i], &hash));
 	}
 
-	pthread_create(&printWorker, NULL, Chash<int>::PRINTALL, new Argument<int>(0, 0, &hash));
-	pthread_join(printWorker, NULL);
+	printf("\n\n");
 
-	for(int i = NUMTHREADS / 2; i < NUMTHREADS; i++)
+	for (int i = NUMTHREADS / 2; i < NUMTHREADS; i++)
 	{
+		printf("%d\t%d\n", hash._get(keys[i - NUMTHREADS / 2]), data[i - NUMTHREADS / 2]);
 		pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>((unsigned int)(rand()), rand(), &hash));
 	}
 
