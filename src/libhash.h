@@ -1,6 +1,11 @@
 // TODO: Testar no Linux.
 // TODO: Implementar as demais operações além da inserção.
 //
+// V PRINTALL (Imprimir tabela)
+// X GET (Buscar elemento)
+// X SET (Modificar elemento)
+// X DELETE (Deletar elemento) Deletar elemento
+//
 // NOTE: Problemas com 4096 threads simultâneas no Windows.
 // NOTE: Windows 8 por si só normalmente não ultrapassa 1000 threads de sistema.
 
@@ -453,6 +458,11 @@ void Chash<Type>:: _print(unsigned int k)
 template<class Type>
 void Chash<Type>:: _printall(void)
 {
+	for (unsigned int i = 0; i < nBlocks; i++)
+	{
+		sem_wait(activitySems.getSemaphore(i));
+	}
+
 	printf("\n\n================ [ Tabela ] ================\n\n");
 	for(unsigned int i = 0; i < this->size; i++)
 		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;
@@ -462,6 +472,11 @@ void Chash<Type>:: _printall(void)
 			"\nSize: %d \nNBlocks: %d \nAlocations: %d \nColisions: %d \nTotal insertions: %d\n"\
 			, size, nBlocks, allocateCounter, collisionCounter, insertions
 			);
+
+	for (unsigned int i = 0; i < nBlocks; i++)
+	{
+		sem_post(activitySems.getSemaphore(i));
+	}
 }
 
 
@@ -515,6 +530,8 @@ void* Chash<Type>::PRINTALL(void *y)
 	a = static_cast< Argument<Type> * > (y);
 
 	a->h->_printall();
+
+	pthread_exit(NULL);
 
 	return NULL;
 }
