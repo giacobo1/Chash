@@ -200,7 +200,7 @@ void Chash<Type>::realloc_add(unsigned int key, Type d)
 }
 
 template<class Type>
-Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores = true)
+Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores)
 {
 	Entry<Type> *_return = NULL;
 
