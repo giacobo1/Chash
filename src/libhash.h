@@ -3,7 +3,7 @@
 //
 // V PRINTALL (Imprimir tabela)
 // V GET (Buscar elemento)
-// X SET (Modificar elemento)
+// V SET (Modificar elemento)
 // X DELETE (Deletar elemento) Deletar elemento
 //
 // NOTE: Problemas com 4096 threads simultâneas no Windows.
@@ -47,7 +47,7 @@ template<class Type>class Chash
 
 	int rehashFunc(unsigned int key, int probing, int *rhst, unsigned int tableSize);
 	void realloc_add(unsigned int key, Type d);
-	Entry<Type> *search(unsigned int key, bool getSemaphores = true);
+	Entry<Type> *search(unsigned int key);
 
 public:
 
@@ -200,7 +200,7 @@ void Chash<Type>::realloc_add(unsigned int key, Type d)
 }
 
 template<class Type>
-Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores)
+Entry<Type> *Chash<Type>::search(unsigned int key)
 {
 	Entry<Type> *_return = NULL;
 
@@ -230,11 +230,8 @@ Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores)
 
 	rehashIteraction_t = -1;
 
-	if (getSemaphores)
-	{
-		sem_wait(blockSems.getSemaphore(blockIndex));
-		sem_wait(activitySems.getSemaphore(blockIndex));
-	}
+	sem_wait(blockSems.getSemaphore(blockIndex));
+	sem_wait(activitySems.getSemaphore(blockIndex));
 
 	while (true)
 	{
@@ -279,11 +276,8 @@ Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores)
 		}
 	}
 
-	if (getSemaphores)
-	{
-		sem_post(activitySems.getSemaphore(blockIndex));
-		sem_post(blockSems.getSemaphore(blockIndex));
-	}
+	sem_post(activitySems.getSemaphore(blockIndex));
+	sem_post(blockSems.getSemaphore(blockIndex));
 
 	return _return;
 }
@@ -505,7 +499,7 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 		size = allocSize;
 		nBlocks = allocNBlocks;
 
-		printf("ALLOCATE %d %d \n", size, insertions);
+		//printf("ALLOCATE %d %d \n", size, insertions);
 
 		delete [] oldTable;
 
@@ -546,15 +540,160 @@ Type Chash<Type>:: _get(unsigned int k)
 template<class Type>
 void Chash<Type>:: _set(unsigned int k, Type n)
 {
+	int index;
+	int oldIndex;
+	int blockIndex;
+	int oldBlockIndex;
+	int rehashIteraction_t;
+	int oldSize;
+	int value;
 
+	sem_wait(&allocateMut);
+	sem_getvalue(&allocateMut, &value);
+
+	for (int i = value; i < 1; i++)
+	{
+		sem_post(&allocateMut);
+	}
+
+	oldSize = size;
+	index = k % size;
+
+	oldIndex = index;
+
+	blockIndex = index % nBlocks;
+	oldBlockIndex = blockIndex;
+
+	rehashIteraction_t = -1;
+
+	sem_wait(blockSems.getSemaphore(blockIndex));
+	sem_wait(activitySems.getSemaphore(blockIndex));
+
+	while (true)
+	{
+		oldIndex = index;
+        index = rehashFunc(k, PROB, &rehashIteraction_t, size);
+		oldBlockIndex = blockIndex;
+		blockIndex = index % nBlocks;
+
+		if (oldBlockIndex != blockIndex)
+		{
+			sem_post(activitySems.getSemaphore(oldBlockIndex));
+			sem_post(blockSems.getSemaphore(oldBlockIndex));
+			sem_wait(blockSems.getSemaphore(blockIndex));
+			sem_wait(activitySems.getSemaphore(blockIndex));
+		}
+
+		if (oldSize != size)
+		{
+			oldSize = size;
+			continue;
+		}
+
+		if (table[index].getOcupied())
+        {
+            if (table[index].getKey() == k)
+            {
+				table[index].setData(n);
+            	break;
+            }
+            else
+			{
+				continue;
+			}
+        }
+		else if (table[index].getErased())
+		{
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	sem_post(activitySems.getSemaphore(blockIndex));
+	sem_post(blockSems.getSemaphore(blockIndex));
 }
 
 template<class Type>
 void Chash<Type>:: _print(unsigned int k)
 {
+	int index;
+	int oldIndex;
+	int blockIndex;
+	int oldBlockIndex;
+	int rehashIteraction_t;
+	int oldSize;
+	int value;
 
+	sem_wait(&allocateMut);
+	sem_getvalue(&allocateMut, &value);
+
+	for (int i = value; i < 1; i++)
+	{
+		sem_post(&allocateMut);
+	}
+
+	oldSize = size;
+	index = key % size;
+
+	oldIndex = index;
+
+	blockIndex = index % nBlocks;
+	oldBlockIndex = blockIndex;
+
+	rehashIteraction_t = -1;
+
+	sem_wait(blockSems.getSemaphore(blockIndex));
+	sem_wait(activitySems.getSemaphore(blockIndex));
+
+	while (true)
+	{
+		oldIndex = index;
+        index = rehashFunc(key, PROB, &rehashIteraction_t, size);
+		oldBlockIndex = blockIndex;
+		blockIndex = index % nBlocks;
+
+		if (oldBlockIndex != blockIndex)
+		{
+			sem_post(activitySems.getSemaphore(oldBlockIndex));
+			sem_post(blockSems.getSemaphore(oldBlockIndex));
+			sem_wait(blockSems.getSemaphore(blockIndex));
+			sem_wait(activitySems.getSemaphore(blockIndex));
+		}
+
+		if (oldSize != size)
+		{
+			oldSize = size;
+			continue;
+		}
+
+		if (table[index].getOcupied())
+        {
+            if (table[index].getKey() == key)
+            {
+				cout << " Index: " << index << "\tBlock: " << blockIndex << "\tData: " << table[index].getData() << endl;
+            	break;
+            }
+            else
+			{
+				continue;
+			}
+        }
+		else if (table[index].getErased())
+		{
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	sem_post(activitySems.getSemaphore(blockIndex));
+	sem_post(blockSems.getSemaphore(blockIndex));
 }
-
 
 template<class Type>
 void Chash<Type>:: _printall(void)
@@ -565,8 +704,8 @@ void Chash<Type>:: _printall(void)
 	}
 
 	printf("\n\n================ [ Tabela ] ================\n\n");
-	/*for(unsigned int i = 0; i < this->size; i++)
-		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;*/
+	for(unsigned int i = 0; i < this->size; i++)
+		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;
 
 	
 	printf(
@@ -625,13 +764,29 @@ void* Chash<Type>::GET(void *y)
 template<class Type>
 void* Chash<Type>::SET(void *y)
 {
+	Argument<Type> *a;
+
+	a = static_cast< Argument<Type> * > (y);
+
+	a->h->_set(a->key, a->data);
+
 	pthread_exit(NULL);
+
+	return NULL;
 }
 
 template<class Type>
 void* Chash<Type>::PRINT(void *y)
 {
+	Argument<Type> *a;
+
+	a = static_cast< Argument<Type> * > (y);
+
+	a->h->_print(a->key);
+
 	pthread_exit(NULL);
+
+	return NULL;
 }
 
 template<class Type>

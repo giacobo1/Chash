@@ -1,8 +1,8 @@
 #include "libhash.h"
 #include <time.h>
 
-#define NUMTHREADS 256
-#define TIMES 8
+#define NUMTHREADS 8
+#define TIMES 1
 
 int main(int argc, char *argv[])
 {
@@ -16,11 +16,16 @@ int main(int argc, char *argv[])
 	{
 		for (int i = 0; i < NUMTHREADS; i++)
 		{
-			pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>((unsigned int)(rand()), rand(), &hash));
+			pthread_create(&w[i], NULL, Chash<int>::ADD, new Argument<int>((unsigned int)(i), rand(), &hash));
 		}
 
 		for (int i = 0; i < NUMTHREADS; i++) pthread_join(w[i], NULL);
 	}
+
+	hash._printall();
+
+	pthread_create(&w[5], NULL, Chash<int>::SET, new Argument<int>((unsigned int)(5), 14, &hash));
+	pthread_join(w[5], NULL);
 
 	hash._printall();
 	
