@@ -100,6 +100,20 @@ public:
 		data = d;
 		h = x;
 	}
+	Argument(Chash<Type> *x)
+	{
+		h = x;
+	}
+
+	Argument(unsigned int k)
+	{
+		key = k;
+	}
+	Argument(Type d)
+	{
+		data = d;
+	}
+
 };
 
 
@@ -636,7 +650,7 @@ void Chash<Type>:: _print(unsigned int k)
 	}
 
 	oldSize = size;
-	index = key % size;
+	index = k % size;
 
 	oldIndex = index;
 
@@ -651,7 +665,7 @@ void Chash<Type>:: _print(unsigned int k)
 	while (true)
 	{
 		oldIndex = index;
-        index = rehashFunc(key, PROB, &rehashIteraction_t, size);
+        index = rehashFunc(k, PROB, &rehashIteraction_t, size);
 		oldBlockIndex = blockIndex;
 		blockIndex = index % nBlocks;
 
@@ -671,7 +685,7 @@ void Chash<Type>:: _print(unsigned int k)
 
 		if (table[index].getOcupied())
         {
-            if (table[index].getKey() == key)
+            if (table[index].getKey() == k)
             {
 				cout << " Index: " << index << "\tBlock: " << blockIndex << "\tData: " << table[index].getData() << endl;
             	break;
@@ -733,6 +747,8 @@ void* Chash<Type>::ADD(void *y)
 
 	a->h->_add(a->key,a->data);
 
+	delete a;
+
 	pthread_exit(NULL);
 
 	return NULL;
@@ -770,6 +786,8 @@ void* Chash<Type>::SET(void *y)
 
 	a->h->_set(a->key, a->data);
 
+	delete a;
+
 	pthread_exit(NULL);
 
 	return NULL;
@@ -784,6 +802,9 @@ void* Chash<Type>::PRINT(void *y)
 
 	a->h->_print(a->key);
 
+
+	delete a;
+
 	pthread_exit(NULL);
 
 	return NULL;
@@ -797,6 +818,8 @@ void* Chash<Type>::PRINTALL(void *y)
 	a = static_cast< Argument<Type> * > (y);
 
 	a->h->_printall();
+
+	delete a;
 
 	pthread_exit(NULL);
 
