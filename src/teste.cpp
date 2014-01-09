@@ -1,7 +1,7 @@
 #include "libhash.h"
 #include <time.h>
 
-#define NUMTHREADS 512
+#define NUMTHREADS 256
 #define TIMES 8
 
 int main(int argc, char *argv[])
