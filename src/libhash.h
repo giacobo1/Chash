@@ -32,6 +32,9 @@ template<class Type>class Chash
 	unsigned int collisionCounter;
 	unsigned int allocateCounter;
 
+	unsigned int allocSize;
+	unsigned int allocNBlocks;
+
 	Entry<Type> *table;
 	
 	SemList blockSems;
@@ -42,7 +45,7 @@ template<class Type>class Chash
 
 	bool allocating;
 
-	int rehashFunc(unsigned int key, int probing, int *rhst);
+	int rehashFunc(unsigned int key, int probing, int *rhst, unsigned int tableSize);
 	void realloc_add(unsigned int key, Type d);
 	Entry<Type> *search(unsigned int key, bool getSemaphores = true);
 
@@ -152,9 +155,9 @@ Chash<Type>::~Chash(void)
 // ======================================//
 
 template<class Type>
-int Chash<Type>::rehashFunc(unsigned int key, int probing, int *rhst)
+int Chash<Type>::rehashFunc(unsigned int key, int probing, int *rhst, unsigned int tableSize)
 {
-	unsigned int rehashStart = key % size;
+	unsigned int rehashStart = key % tableSize;
     unsigned int aux;
 
     *rhst += 1;
@@ -168,7 +171,7 @@ int Chash<Type>::rehashFunc(unsigned int key, int probing, int *rhst)
         aux = (((*rhst) * (*rhst)) + (*rhst)) / 2;
     }   
 
-    return (rehashStart + aux) % size;
+    return (rehashStart + aux) % tableSize;
 }
 
 template<class Type>
@@ -177,7 +180,7 @@ void Chash<Type>::realloc_add(unsigned int key, Type d)
 	int index;
 	int it = 0;
 
-	index = key % size;
+	index = key % allocSize;
 
 	while (true)
 	{
@@ -191,7 +194,7 @@ void Chash<Type>::realloc_add(unsigned int key, Type d)
 		}
 		else
 		{
-			index = rehashFunc(key, PROB, &it);
+			index = rehashFunc(key, PROB, &it, allocSize);
 		}
 	}
 }
@@ -236,7 +239,7 @@ Entry<Type> *Chash<Type>::search(unsigned int key, bool getSemaphores = true)
 	while (true)
 	{
 		oldIndex = index;
-        index = rehashFunc(key, PROB, &rehashIteraction_t);
+        index = rehashFunc(key, PROB, &rehashIteraction_t, size);
 		oldBlockIndex = blockIndex;
 		blockIndex = index % nBlocks;
 
@@ -294,21 +297,11 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 	int blockIndex;
 	int rehashIteraction_t;
 	int oldSize;
-	int a = 1, b = 2;
 	sem_t *elem = NULL;
-
 	Entry<Type> *oldTable;
 
 	int oldBlockIndex;
 	int oldIndex;
-
-	sem_wait(&allocateMut);
-	sem_getvalue(&allocateMut, &value);
-
-	for (int i = value; i < 1; i++)
-	{
-		sem_post(&allocateMut);
-	}
 
 	oldSize = size;
 	index = k % size;
@@ -347,7 +340,7 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 	while (true)
 	{
 		oldIndex = index;
-        index = rehashFunc(k, PROB, &rehashIteraction_t);
+        index = rehashFunc(k, PROB, &rehashIteraction_t, size);
 		oldBlockIndex = blockIndex;
 		blockIndex = index % nBlocks;
 
@@ -427,9 +420,11 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 
 	sem_wait(&allocateMut);
 
+	sem_getvalue(&allocateMut, &value);
+
 	loadFactor = (float)insertions / (float)size;
 
-	while (loadFactor > 0.75)
+	while (loadFactor > 0.75 && !allocating)
 	{
 		allocating = true;
 
@@ -451,13 +446,15 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 			#endif
 		}
 
-		size *= 2;
-		nBlocks *= 2;
+		//size *= 2;
+		allocSize = size * 2;
+		//nBlocks *= 2;
+		allocNBlocks = nBlocks * 2;
 
 		oldTable = table;
-		table = new Entry<Type>[size];
+		table = new Entry<Type>[allocSize];
 
-		for (unsigned int i = 0; i < size / 2; i++)
+		for (unsigned int i = 0; i < allocSize / 2; i++)
 		{
 			if (oldTable[i].getOcupied())
 			{
@@ -466,9 +463,9 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 		}
 
 
-		if ((unsigned int)blockSems.getSize() < nBlocks)
+		if ((unsigned int)blockSems.getSize() < allocNBlocks)
 		{
-			for (unsigned int i = 0; i < nBlocks / 2; i++)
+			for (unsigned int i = 0; i < nBlocks; i++)
 			{
 				blockSems.addSemaphore();
 				activitySems.addSemaphore();
@@ -485,7 +482,7 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 			sem_post(&allocateSem);
 		}
 
-		for (unsigned int i = 0; i < nBlocks / 2; i++)
+		for (unsigned int i = 0; i < nBlocks; i++)
 		{
 
 			#ifdef DEBUG
@@ -504,6 +501,11 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 		#endif
 
 		allocateCounter++;
+
+		size = allocSize;
+		nBlocks = allocNBlocks;
+
+		printf("ALLOCATE %d %d \n", size, insertions);
 
 		delete [] oldTable;
 
