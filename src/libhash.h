@@ -75,6 +75,7 @@ public:
     void _print(unsigned int k);
     void _printall(void);
 
+    inline unsigned int getSize(void)const{return size;}
     //
     static void *ADD(void *y);
     static void *DELETE(void *y);
@@ -94,6 +95,13 @@ public:
 	unsigned int key;
 	Chash<Type> *h;
 
+	Argument(void)
+	{
+		data = (Type)NULL;
+		h = NULL;
+		key = 0;
+	}
+
 	Argument(unsigned int k, Type d, Chash<Type> *x)
 	{
 		key = k;
@@ -105,10 +113,12 @@ public:
 		h = x;
 	}
 
-	Argument(unsigned int k)
+	Argument(unsigned int k, Chash<Type> *x)
 	{
 		key = k;
+		h = x;
 	}
+
 	Argument(Type d)
 	{
 		data = d;
@@ -407,7 +417,7 @@ void Chash<Type>:: _add(unsigned int k, Type n)
             table[index].setKey(k);
             table[index].setData(n);
             table[index].setOcupied(true);
-            
+        
             insertions++;
 
             break;
@@ -764,13 +774,13 @@ template<class Type>
 void* Chash<Type>::GET(void *y)
 {
 	Argument<Type> *a;
-	Type *data;
+	Type data;
 
 	a = static_cast< Argument<Type> * > (y);
 
 	data = a->h->_get(a->key);
 
-	a->data = data();
+	a->data = data;
 
 	pthread_exit(NULL);
 
