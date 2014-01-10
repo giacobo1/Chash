@@ -9,6 +9,9 @@
 // NOTE: Problemas com 4096 threads simultâneas no Windows.
 // NOTE: Windows 8 por si só normalmente não ultrapassa 1000 threads de sistema.
 
+// função delete implementada e testada, print corrigido, correção no printall, add limpo
+
+
 #ifndef LIBHASH_H
 #define LIBHASH_H
 
@@ -187,6 +190,8 @@ Chash<Type>::~Chash(void)
 
 	sem_destroy(&allocateMut);
 	sem_destroy(&allocateSem);
+
+
 }
 
 
@@ -345,29 +350,8 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 
 	rehashIteraction_t = -1;
 
-	#ifdef DEBUG
-	elem = blockSems.getSemaphore(blockIndex);
-	if (elem == NULL) printf("NULL POINTER\n");
-	#endif
-
 	sem_wait(blockSems.getSemaphore(blockIndex));
-
-	#ifdef DEBUG
-	printf("LOCK index: %d block: %d \n", index, blockIndex);
-	sem_getvalue(activitySems.getSemaphore(blockIndex), &value);
-	#endif
-	
-	#ifdef DEBUG
-	elem = activitySems.getSemaphore(blockIndex);
-	if (elem == NULL) printf("NULL POINTER\n");
-	#endif
-
 	sem_wait(activitySems.getSemaphore(blockIndex));
-
-	#ifdef DEBUG
-	sem_getvalue(activitySems.getSemaphore(blockIndex), &value);
-	printf("WORKING index: %d block: %d \n", index, blockIndex);
-	#endif
 
 	while (true)
 	{
@@ -378,20 +362,10 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 
 		if (oldBlockIndex != blockIndex)
 		{
-
-			#ifdef DEBUG
-			printf("UNLOCK index: %d block: %d \n", oldIndex, oldBlockIndex);
-			#endif
-
 			sem_post(activitySems.getSemaphore(oldBlockIndex));
 			sem_post(blockSems.getSemaphore(oldBlockIndex));
 			sem_wait(blockSems.getSemaphore(blockIndex));
 			sem_wait(activitySems.getSemaphore(blockIndex));
-
-			#ifdef DEBUG
-			printf("LOCK index: %d block: %d \n", index, blockIndex);
-			#endif
-
 		}
 
 		if (oldSize != size)
@@ -404,30 +378,16 @@ void Chash<Type>:: _add(unsigned int k, Type n)
         {
             if(table[index].getKey() == k && table[index].getData() == n)
             {
-
-				#ifdef DEBUG
-				printf("ALREADY HERE index: %d block: %d \n", index, blockIndex);
-				#endif
-
             	break;
             }
             else
             {
             	collisionCounter++;
-
-				#ifdef DEBUG
-				printf("COLLISION index: %d block: %d \n", index, blockIndex);
-				#endif
-
 				continue;
             }
         }
 		else
         {
-			#ifdef DEBUG
-			printf("ADD index: %d block: %d \n", index, blockIndex);
-			#endif
-
             table[index].setKey(k);
             table[index].setData(n);
             table[index].setOcupied(true);
@@ -437,18 +397,8 @@ void Chash<Type>:: _add(unsigned int k, Type n)
             break;
         }
 	}
-
-	#ifdef DEBUG
-	printf("UNLOCK index: %d block: %d \n", index, blockIndex);
-	#endif
-
 	sem_post(activitySems.getSemaphore(blockIndex));
 	sem_post(blockSems.getSemaphore(blockIndex));
-
-	#ifdef DEBUG
-	printf("NOT WORKING index: %d block: %d \n", index, blockIndex);
-	#endif
-	
 
 	sem_wait(&allocateMut);
 
@@ -460,27 +410,13 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 	{
 		allocating = true;
 
-		#ifdef DEBUG
-		printf("ALLOCATE LOCK index: %d block: %d \n", index, blockIndex);
-		#endif
-
 		for (unsigned int i = 0; i < nBlocks; i++)
 		{
-
-			#ifdef DEBUG
-			sem_getvalue(activitySems.getSemaphore(i), &value);
-			#endif
-
 			sem_wait(activitySems.getSemaphore(i));
-
-			#ifdef DEBUG
-			sem_getvalue(activitySems.getSemaphore(i), &value);
-			#endif
 		}
 
-		//size *= 2;
 		allocSize = size * 2;
-		//nBlocks *= 2;
+		
 		allocNBlocks = nBlocks * 2;
 
 		oldTable = table;
@@ -504,7 +440,6 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 			}
 		}
 
-
 		allocating = false;
 
 		sem_getvalue(&allocateSem, &value);
@@ -522,22 +457,12 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 			#endif
 
 			sem_post(activitySems.getSemaphore(i));
-
-			#ifdef DEBUG
-			sem_getvalue(activitySems.getSemaphore(i), &value);
-			#endif
 		}
-
-		#ifdef DEBUG
-		printf("ALLOCATE UNLOCK index: %d block: %d insertions: %d \n", index, blockIndex, insertions);
-		#endif
 
 		allocateCounter++;
 
 		size = allocSize;
 		nBlocks = allocNBlocks;
-
-		//printf("ALLOCATE %d %d \n", size, insertions);
 
 		delete [] oldTable;
 
@@ -556,6 +481,83 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 template<class Type>
 void Chash<Type>:: _delete(unsigned int k)
 {
+	int index;
+	int oldIndex;
+	int blockIndex;
+	int oldBlockIndex;
+	int rehashIteraction_t;
+	int oldSize;
+	int value;
+
+	bool exists = true;
+
+	sem_wait(&allocateMut);
+	sem_getvalue(&allocateMut, &value);
+
+	for (int i = value; i < 1; i++)
+	{
+		sem_post(&allocateMut);
+	}
+
+	oldSize = size;
+	index = k % size;
+
+	oldIndex = index;
+
+	blockIndex = index % nBlocks;
+	oldBlockIndex = blockIndex;
+
+	rehashIteraction_t = -1;
+
+	sem_wait(blockSems.getSemaphore(blockIndex));
+	sem_wait(activitySems.getSemaphore(blockIndex));
+
+	while (true)
+	{
+		oldIndex = index;
+        index = rehashFunc(k, PROB, &rehashIteraction_t, size);
+		oldBlockIndex = blockIndex;
+		blockIndex = index % nBlocks;
+
+		if (oldBlockIndex != blockIndex)
+		{
+			sem_post(activitySems.getSemaphore(oldBlockIndex));
+			sem_post(blockSems.getSemaphore(oldBlockIndex));
+			sem_wait(blockSems.getSemaphore(blockIndex));
+			sem_wait(activitySems.getSemaphore(blockIndex));
+		}
+
+		if (oldSize != size)
+		{
+			oldSize = size;
+			continue;
+		}
+
+		if (table[index].getOcupied())
+        {
+            if (table[index].getKey() == k)
+            {
+				table[index].setOcupied(false);
+				table[index].setErased(true);
+				table[index].setKey(0);
+				table[index].setData((Type)NULL);
+				insertions-= 1;
+
+            	break;
+            }
+        }
+		else if (table[index].getErased())
+		{
+			continue;			
+		}
+		else
+		{
+            break;
+		}
+	}
+
+	sem_post(activitySems.getSemaphore(blockIndex));
+	sem_post(blockSems.getSemaphore(blockIndex));
 
 }
 
@@ -739,11 +741,12 @@ void Chash<Type>:: _print(unsigned int k)
 			}
         }
 		else if (table[index].getErased())
-		{
+		{			
 			continue;
 		}
 		else
 		{
+			printf("index: %d \t block: %d \t dado: (NULL)\n",index,blockIndex );
 			break;
 		}
 	}
@@ -762,8 +765,11 @@ void Chash<Type>:: _printall(void)
 
 	printf("\n\n================ [ Tabela ] ================\n\n");
 	for(unsigned int i = 0; i < this->size; i++)
-		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData() << endl;
+	{
+		cout << "index: " << i << "   key: " << table[i].getKey() << "\tdata: " << table[i].getData()<< endl;
 
+	}	
+		
 	
 	printf(
 			"\nSize: %d \nNBlocks: %d \nAlocations: %d \nColisions: %d \nTotal insertions: %d\n"\
@@ -808,7 +814,7 @@ void* Chash<Type>::DELETE(void *y)
 
 	if(!a->h->isDeallocating())
 	{			
-		a->h->_add(a->key,a->data);
+		a->h->_delete(a->key);
 	}
 
 	delete a;
