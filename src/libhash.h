@@ -44,6 +44,7 @@ template<class Type>class Chash
 	sem_t allocateSem;
 
 	bool allocating;
+	bool deallocating;
 
 	int rehashFunc(unsigned int key, int probing, int *rhst, unsigned int tableSize);
 	void realloc_add(unsigned int key, Type d);
@@ -76,6 +77,7 @@ public:
     void _printall(void);
 
     inline unsigned int getSize(void)const{return size;}
+    inline bool isDeallocating(void)const {return deallocating;}
     //
     static void *ADD(void *y);
     static void *DELETE(void *y);
@@ -151,6 +153,7 @@ Chash<Type>::Chash(unsigned int m, unsigned int n)
 	this->insertions		= 0;
 	this->allocateCounter	= 0;
 	this->allocating		= false;
+	this->deallocating	 	= false;
 	this->collisionCounter	= 0;
 	
 	sem_init(&allocateMut, 0, 1);
@@ -172,7 +175,18 @@ Chash<Type>::Chash(unsigned int m, unsigned int n)
 template<class Type>
 Chash<Type>::~Chash(void)
 {
-	//delete[] table;
+	deallocating = true;
+
+	for (unsigned int i = 0; i < nBlocks; i++)
+	{			
+		sem_wait(blockSems.getSemaphore(i));
+		sem_wait(activitySems.getSemaphore(i));
+	}
+
+	delete[] table;
+
+	sem_destroy(&allocateMut);
+	sem_destroy(&allocateSem);
 }
 
 
@@ -774,11 +788,12 @@ void* Chash<Type>::ADD(void *y)
 
 	a = static_cast< Argument<Type> * > (y);
 
-	a->h->_add(a->key,a->data);
+	if(!a->h->isDeallocating())
+	{			
+		a->h->_add(a->key,a->data);
+	}
 
 	delete a;
-
-	pthread_exit(NULL);
 
 	return NULL;
 }
@@ -786,6 +801,21 @@ void* Chash<Type>::ADD(void *y)
 template<class Type>
 void* Chash<Type>::DELETE(void *y)
 {
+
+	Argument<Type> *a;
+
+	a = static_cast< Argument<Type> * > (y);
+
+	if(!a->h->isDeallocating())
+	{			
+		a->h->_add(a->key,a->data);
+	}
+
+	delete a;
+
+	return NULL;
+
+
 	pthread_exit(NULL);
 }
 
@@ -797,11 +827,14 @@ void* Chash<Type>::GET(void *y)
 
 	a = static_cast< Argument<Type> * > (y);
 
-	data = a->h->_get(a->key);
 
-	a->data = data;
+	if(!a->h->isDeallocating())
+	{	
+		data = a->h->_get(a->key);
 
-	pthread_exit(NULL);
+		a->data = data;
+
+	}	
 
 	return NULL;
 }
@@ -813,11 +846,13 @@ void* Chash<Type>::SET(void *y)
 
 	a = static_cast< Argument<Type> * > (y);
 
-	a->h->_set(a->key, a->data);
 
+	if(!a->h->isDeallocating())
+	{
+		a->h->_set(a->key, a->data);
+
+	}	
 	delete a;
-
-	pthread_exit(NULL);
 
 	return NULL;
 }
@@ -829,12 +864,13 @@ void* Chash<Type>::PRINT(void *y)
 
 	a = static_cast< Argument<Type> * > (y);
 
-	a->h->_print(a->key);
 
+	if(!a->h->isDeallocating())
+	{
+		a->h->_print(a->key);
+	}
 
 	delete a;
-
-	pthread_exit(NULL);
 
 	return NULL;
 }
@@ -846,11 +882,14 @@ void* Chash<Type>::PRINTALL(void *y)
 
 	a = static_cast< Argument<Type> * > (y);
 
-	a->h->_printall();
+
+	if(!a->h->isDeallocating())
+	{
+
+		a->h->_printall();
+	}	
 
 	delete a;
-
-	pthread_exit(NULL);
 
 	return NULL;
 }

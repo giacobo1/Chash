@@ -6,6 +6,9 @@
 
 int main(int argc, char *argv[])
 {
+
+
+	
 	Chash<int> hash((unsigned int)(8),(unsigned int)(1));
 
 	srand(time(NULL));
@@ -30,6 +33,11 @@ int main(int argc, char *argv[])
 	
 	for (int i = 0; i < NUMTHREADS; i++) pthread_join(w[i], NULL);
 	
+	hash._printall();
+	
+
+	/*
+
 
 	for (int i = 0; i < NUMTHREADS; i++)
 	{
@@ -39,8 +47,6 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < NUMTHREADS; i++) pthread_join(p[i], NULL);
 
 	hash._printall();
-
-	/*	
 
 	pthread_create(&s[0], NULL, Chash<int>::SET, new Argument<int>((unsigned int)(5),14,&hash));
 	pthread_create(&s[1], NULL, Chash<int>::SET, new Argument<int>((unsigned int)(6),14,&hash));
@@ -52,7 +58,5 @@ int main(int argc, char *argv[])
 	cout << "\n" << g[0].data << " "<< g[1].data << " "<< g[2].data << " " << endl; 
 	
 	*/
-	//system("pause");
-
 	return 0;
 }

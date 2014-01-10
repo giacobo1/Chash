@@ -21,14 +21,12 @@ public:
 		
 	}
 
-	/*
+	
 	void destroy()
 	{
-		if (next != NULL) next->destroy();
-
 		sem_destroy(&sem);
 	}
-	*/
+	
 
 	SemListElement *createNext()
 	{
@@ -65,7 +63,14 @@ public:
 
 	~SemList()
 	{
-		//start->destroy();
+		SemListElement *start_delete = start;
+
+		while(start)
+		{			
+			start = start->getNext();			
+			start_delete->destroy();
+			start_delete = start;
+		}
 	}
 
 	void addSemaphore()
