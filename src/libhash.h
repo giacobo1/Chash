@@ -127,7 +127,7 @@ public:
 template<class Type>
 Chash<Type>::Chash(void)
 {
-	Chash(2, 4);
+	Chash(8, 2);
 }
 
 template<class Type>
@@ -143,7 +143,7 @@ template<class Type>
 Chash<Type>::Chash(unsigned int m, unsigned int n)
 {
 	this->nBlocks			= n;
-	this->size				= m * n;
+	this->size				= m;
 	this->insertions		= 0;
 	this->allocateCounter	= 0;
 	this->allocating		= false;
