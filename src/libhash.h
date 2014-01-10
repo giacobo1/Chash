@@ -572,6 +572,8 @@ void Chash<Type>:: _set(unsigned int k, Type n)
 	int oldSize;
 	int value;
 
+	bool exists = true;
+
 	sem_wait(&allocateMut);
 	sem_getvalue(&allocateMut, &value);
 
@@ -621,18 +623,35 @@ void Chash<Type>:: _set(unsigned int k, Type n)
 				table[index].setData(n);
             	break;
             }
-            else
-			{
-				continue;
-			}
         }
 		else if (table[index].getErased())
 		{
-			continue;
+			if (exists) continue;
+
+			table[index].setKey(k);
+            table[index].setData(n);
+            table[index].setOcupied(true);
+            
+            insertions++;
+
+            break;
 		}
 		else
 		{
-			break;
+			if (exists)
+			{
+				exists = false;
+				rehashIteraction_t = -1;
+				continue;
+			}
+
+			table[index].setKey(k);
+            table[index].setData(n);
+            table[index].setOcupied(true);
+            
+            insertions++;
+
+            break;
 		}
 	}
 
