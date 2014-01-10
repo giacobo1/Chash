@@ -5,6 +5,7 @@ SOURCES=teste.cpp libhash.h
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=exe
 
+
 all: $(SOURCES) $(EXECUTABLE)
 	
 $(EXECUTABLE): $(OBJECTS) 

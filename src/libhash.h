@@ -1,6 +1,5 @@
 // TODO: tudo que ta escrito no .cpp
-// TODO: mais testes e comentar código.
-// TODO: resolver warning de unsigned comparados com signed..
+// TODO: mais testes
 
 #ifndef LIBHASH_H
 #define LIBHASH_H
@@ -17,8 +16,7 @@
 
 using namespace std;
 
-#define PROB 1
-//#define DEBUG
+#define PROB 0
 
 template<class Type>class Chash
 {
@@ -65,12 +63,12 @@ public:
 
 
 	//
-	void _add(unsigned int k, Type n); //40%
-    void _delete(unsigned int k); // 30%
-    Type _get(unsigned int k);// 5%
-    void _set(unsigned int k, Type n); // 15%
-    void _print(unsigned int k); // 5%
-    void _printall(void);// 5%
+	void _add(unsigned int k, Type n);
+    void _delete(unsigned int k); 
+    Type _get(unsigned int k);
+    void _set(unsigned int k, Type n); 
+    void _print(unsigned int k);
+    void _printall(void);
 
     inline unsigned int getSize(void)const{return size;}
     inline bool isDeallocating(void)const {return deallocating;}
