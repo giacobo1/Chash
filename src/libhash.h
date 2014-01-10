@@ -284,7 +284,7 @@ Entry<Type> *Chash<Type>::search(unsigned int key)
 			sem_wait(activitySems.getSemaphore(blockIndex));
 		}
 
-		if (oldSize != size)
+		if ((unsigned int)oldSize != size)
 		{
 			oldSize = size;
 			continue;
@@ -361,7 +361,7 @@ void Chash<Type>:: _add(unsigned int k, Type n)
 			sem_wait(activitySems.getSemaphore(blockIndex));
 		}
 
-		if (oldSize != size)
+		if ((unsigned int)oldSize != size)
 		{
 			oldSize = size;
 			continue;
@@ -520,7 +520,7 @@ void Chash<Type>:: _delete(unsigned int k)
 			sem_wait(activitySems.getSemaphore(blockIndex));
 		}
 
-		if (oldSize != size)
+		if ((unsigned int)oldSize != size)
 		{
 			oldSize = size;
 			continue;
@@ -619,7 +619,7 @@ void Chash<Type>:: _set(unsigned int k, Type n)
 			sem_wait(activitySems.getSemaphore(blockIndex));
 		}
 
-		if (oldSize != size)
+		if ((unsigned int)oldSize != size)
 		{
 			oldSize = size;
 			continue;
@@ -715,7 +715,7 @@ void Chash<Type>:: _print(unsigned int k)
 			sem_wait(activitySems.getSemaphore(blockIndex));
 		}
 
-		if (oldSize != size)
+		if ((unsigned int)oldSize != size)
 		{
 			oldSize = size;
 			continue;
