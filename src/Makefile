@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-c -Wall
-LDFLAGS=-lpthread
+LDFLAGS=-lpthread -lm
 SOURCES=teste.cpp libhash.h
 OBJECTS=$(SOURCES:.cpp=.o)
 EXECUTABLE=teste

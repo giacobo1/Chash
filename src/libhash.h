@@ -1,16 +1,6 @@
-// TODO: Testar no Linux.
-// TODO: Implementar as demais operações além da inserção.
-//
-// V PRINTALL (Imprimir tabela)
-// V GET (Buscar elemento)
-// V SET (Modificar elemento)
-// X DELETE (Deletar elemento) Deletar elemento
-//
-// NOTE: Problemas com 4096 threads simultâneas no Windows.
-// NOTE: Windows 8 por si só normalmente não ultrapassa 1000 threads de sistema.
-
-// função delete implementada e testada, print corrigido, correção no printall, add limpo
-
+// TODO: tudo que ta escrito no .cpp
+// TODO: mais testes e comentar código.
+// TODO: resolver warning de unsigned comparados com signed..
 
 #ifndef LIBHASH_H
 #define LIBHASH_H
@@ -18,9 +8,12 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstdio>
+#include <ctime>
 #include <pthread.h>
+#include <cmath>
 #include "semlist.h"
 #include "entry.h"
+
 
 using namespace std;
 
@@ -72,12 +65,12 @@ public:
 
 
 	//
-	void _add(unsigned int k, Type n);
-    void _delete(unsigned int k);
-    Type _get(unsigned int k);
-    void _set(unsigned int k, Type n);
-    void _print(unsigned int k);
-    void _printall(void);
+	void _add(unsigned int k, Type n); //40%
+    void _delete(unsigned int k); // 30%
+    Type _get(unsigned int k);// 5%
+    void _set(unsigned int k, Type n); // 15%
+    void _print(unsigned int k); // 5%
+    void _printall(void);// 5%
 
     inline unsigned int getSize(void)const{return size;}
     inline bool isDeallocating(void)const {return deallocating;}
